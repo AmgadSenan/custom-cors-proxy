@@ -4,8 +4,27 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 const app = express();
 
 /**
- * هذا البروكسي يستقبل:
- * https://your-proxy.onrender.com/https://api.example.com/path
+ * حل طلبات Preflight (OPTIONS)
+ */
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    req.headers["access-control-request-headers"] || "*"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
+/**
+ * Custom CORS Proxy
+ * الشكل:
+ * /https://api.example.com/path
  */
 app.use(
   "/",
@@ -15,11 +34,9 @@ app.use(
     secure: true,
     followRedirects: true,
     router: (req) => {
-      // استخراج الرابط الحقيقي من المسار
       return req.originalUrl.slice(1);
     },
     onProxyRes(proxyRes, req, res) {
-      // CORS headers
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Allow-Credentials", "true");
     },
